@@ -15,7 +15,11 @@
 
 ### call_usermodehelper
 
-`call_usermodehelper` 是一种内核线程执行用户态应用的方式，并且启动的进程具有 root 权限。因此，如果我们能够控制具体要执行的应用，那就可以实现提权。在内核中，`call_usermodehelper` 具体要执行的应用往往是由某个变量指定的，因此我们只需要想办法修改掉这个变量即可。不难看出，这是一种典型的数据流攻击方法。一般常用的主要有以下几种方式。
+`call_usermodehelper` 是一种内核线程执行用户态应用的方式，并且启动的进程具有 root 权限。因此，如果我们能够**控制具体要执行的应用**，那就可以实现提权。在内核中，`call_usermodehelper` 具体要执行的应用往往是由某个变量指定的，因此我们只需要想办法修改掉这个变量即可。
+
+值得一提的是，在部分近期 CTF 题目及少数现实应用（如 AOSP 内核）中启用了 CONFIG_STATIC_USERMODEHELPER 选项，这会导致 `call_usermodehelper` 只能直接执行特定的应用（由一个编译时确定的只读字符串控制），从而防御此利用方式。  
+
+不难看出，这是一种典型的数据流攻击方法。一般常用的主要有以下几种方式。
 
 #### 修改 modprobe_path
 
@@ -23,9 +27,9 @@
 
 1. 获取 modprobe_path 的地址。
 2. 修改 modprobe_path 为指定的程序。
-3. 触发执行 `call_modprobe `，从而实现提权 。这里我们可以利用以下几种方式来触发
-    1. 执行一个非法的可执行文件。非法的可执行文件需要满足相应的要求（参考 call_usermodehelper 部分的介绍）。
-    2. 使用未知协议来触发。
+3. 触发执行 `call_modprobe`，从而实现提权 。这里我们可以利用以下几种方式来触发
+    1. （已过时）执行一个非法的可执行文件。非法的可执行文件需要满足相应的要求（参考 call_usermodehelper 部分的介绍）。然而，在 2024 年 11 月中引入的[新补丁](https://web.git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=fa1bdca98d74472dcdb79cb948b54f63b5886c04)移除了加载非法可执行文件对 binfmt 的自动加载，使得此方法不再适用于 Linux 6.12 之后的版本。
+    2. 引诱内核加载新内核模块（如使用未知协议来）触发。
 
 这里我们也给出使用 modprobe_path 的模板。
 
@@ -36,12 +40,12 @@
 system("echo -ne '#!/bin/sh\n/bin/cp /flag /home/pwn/flag\n/bin/chmod 777 /home/pwn/flag\ncat flag' > /home/pwn/catflag.sh");
 system("chmod +x /home/pwn/catflag.sh");
 
-// step 3. trigger it using unknown executable
+// step 3. trigger modprobe using unknown executable (may be obsolete)
 system("echo -ne '\\xff\\xff\\xff\\xff' > /home/pwn/dummy");
 system("chmod +x /home/pwn/dummy");
 system("/home/pwn/dummy");
 
-// step 3. trigger it using unknown protocol
+// step 3. trigger modprobe using unknown protocol
 socket(AF_INET,SOCK_STREAM,132);
 ```
 
@@ -61,6 +65,16 @@ socket(AF_INET,SOCK_STREAM,132);
 2. 劫持控制流执行 `__orderly_poweroff`。
 
 关于如何定位 poweroff_cmd，我们可以采用类似于定位 `modprobe_path` 的方法。
+
+#### 修改 core_pattern
+
+1. 修改 core_pattern 为 `|/path/to/your/program`。
+2. 启用崩溃转储，触发内核执行 core_pattern [管道符后的程序](https://elixir.bootlin.com/linux/v6.18.1/source/fs/coredump.c#L971)。
+
+由于 core_pattern 中大写 %P 表示崩溃进程在宿主机中的 PID，因此也常被用来取代 modprobe_path 用于容器环境下的提权。
+
+关于如何定位 core_pattern，我们可以采用类似于定位 `modprobe_path` 的方法。  
+关于使用 core_pattern 进行提权的更多细节，可以参考[近期 kctf 的 exp](https://github.com/google/security-research/blob/master/pocs/linux/kernelctf/CVE-2025-21836_lts/exploit/lts-6.6.75/exploit.c#L398) 。  
 
 ## 改代码
 
@@ -158,8 +172,6 @@ vDSO 其实是一个 ELF 文件，具有 ELF 文件头。同时，vDSO 中特定
 
 - https://lwn.net/Articles/676145/
 - https://lwn.net/Articles/666550/
-
-
-
-
-
+- https://sam4k.com/like-techniques-modprobe_path/
+- https://theori.io/blog/reviving-the-modprobe-path-technique-overcoming-search-binary-handler-patch
+- https://github.com/google/security-research/blob/master/pocs/linux/kernelctf/CVE-2025-21836_lts/exploit/lts-6.6.75/exploit.c
