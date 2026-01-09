@@ -61,7 +61,7 @@
 
 ### 示例
 
-这里我们以hitcon [level5](https://github.com/zer0ptr/ctf-challenges/blob/master/pwn/linux/user-mode/stackoverflow/ret2__libc_csu_init/hitcon-level5/level5) 为例进行介绍。首先检查程序的安全保护
+这里我们以hitcon [level5](https://github.com/ctf-wiki/ctf-challenges/tree/master/pwn/linux/user-mode/stackoverflow/ret2__libc_csu_init/hitcon-level5) 为例进行介绍。首先检查程序的安全保护
 
 ```shell
 ➜  ret2__libc_csu_init git:(iromise) ✗ checksec level5    
