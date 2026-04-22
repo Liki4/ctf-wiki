@@ -1,6 +1,20 @@
+<div align="center">
+
+<a href="https://ctf-wiki.org/static/img/logo.png" target="_blank"><img src="https://ctf-wiki.org/static/img/logo.png" width="128" height="128"></a>
+
 # CTF Wiki
 
-[![Discord](https://dcbadge.vercel.app/api/server/ekv7WDa9pq)](https://discord.gg/ekv7WDa9pq)
+<p align="center">
+
+Come and join us, we need you!
+
+[![](https://img.shields.io/discord/1115906685450596435?style=for-the-badge&color=%237289DA&label=Discord&logo=discord&logoColor=white")](https://discord.gg/ekv7WDa9pq)  [![](https://img.shields.io/github/stars/CTF-Wiki/CTF-Wiki?style=for-the-badge&color=black&label=Stars&logo=github&logoColor=white")](https://github/stars/CTF-Wiki/CTF-Wiki/stargazers)
+
+</p>
+
+</div>
+
+## Introduction
 
 [中文](./README-zh_CN.md)  [English](./README.md)
 
