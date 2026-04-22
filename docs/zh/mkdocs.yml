@@ -506,6 +506,16 @@ nav:
         - pwn/hardware/cpu/side-channel/prefetch.md
     - 可信计算:
       - pwn/hardware/trusted-computing/tee.md
+- AI:
+  - ai/introduction.md
+  - AI for Security:
+    - ai/ai-for-security/introduction.md
+    - Agentic AI:
+      - ai/ai-for-security/agent/introduction.md
+      - ai/ai-for-security/agent/agent-loop.md
+      - ai/ai-for-security/agent/react.md
+  - Security for AI:
+    - ai/security-for-ai/introduction.md
 - Android:
   - android/basic_develop/basic_develop.md
   - Android 运行机制简述:
